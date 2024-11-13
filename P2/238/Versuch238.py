@@ -5,12 +5,20 @@ from scipy.optimize import curve_fit
 import plotly.graph_objects as go
 import math
 import pandas as pd
+from matplotlib import colors as mcolors
+
+
+colors = dict(mcolors.BASE_COLORS, **mcolors.CSS4_COLORS)
+
+plt.rcParams['mathtext.fontset'] = 'stix'
+plt.rcParams['font.family'] = 'STIXGeneral'
 
 def linear(x, m, b):
     return m * x + b
 
-U_err = lambda x : 0.01*x + 0.005 * 100 
+U_err = lambda x : 0.01*x + (0.005 * 100)
 I_err = lambda x : 0.01*x
+
 
 def table_plot(title, *args):
     if len(args) % 2 != 0:
@@ -38,43 +46,6 @@ def table_plot(title, *args):
     fig.show()
 
     return df
-
-def load_cassy_file(file_path):
-    with open(file_path, 'r') as file:
-        lines = file.readlines()
-        
-    data = {}
-
-    for line in lines:
-        if line.startswith("DEF="):
-            def_line = re.sub(r'DEF=|"', '', line).strip()
-
-            columns = []
-            for col in def_line.split("\t"):
-
-                match = re.search(r'(\S+)\s*/', col)
-                if match:
-                    var_name = match.group(1)
-                    columns.append(var_name)
-                    data[var_name] = [] 
-
-            break
-
-    
-    for line in lines:
-        if line.startswith(("MIN=", "MAX=", "SCALE=", "DEC=", "DEF=")):
-            continue
-        
-        values = [float(val.strip().replace(',', '.')) if val != "NAN" else np.nan for val in line.replace("\t", " ").strip().split(" ")]
-        
-        
-        for i, col in enumerate(columns):
-            data[col].append(values[i])
-
-    for col in data:
-        data[col] = np.array(data[col])
-
-    return data
 
 def round_to_significant_error(values, errors):
     rounded_values = []
@@ -114,6 +85,78 @@ def round_to_significant_error(values, errors):
     # Konvertiert die Listen in NumPy-Arrays für konsistente Ausgabe
     return np.array(rounded_values), np.array(rounded_errors)  
 
+def load_cassy_file(file_path):
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+        
+    data = {}
+
+    for line in lines:
+        if line.startswith("DEF="):
+            def_line = re.sub(r'DEF=|"', '', line).strip()
+
+            columns = []
+            for col in def_line.split("\t"):
+
+                match = re.search(r'(\S+)\s*/', col)
+                if match:
+                    var_name = match.group(1)
+                    columns.append(var_name)
+                    data[var_name] = [] 
+
+            break
+
+    
+    for line in lines:
+        if line.startswith(("MIN=", "MAX=", "SCALE=", "DEC=", "DEF=")):
+            continue
+        
+        values = [float(val.strip().replace(',', '.')) if val != "NAN" else np.nan for val in line.replace("\t", " ").strip().split(" ")]
+        
+        
+        for i, col in enumerate(columns):
+            data[col].append(values[i])
+
+    for col in data:
+        data[col] = np.array(data[col])
+
+    return data
+
+def load_file(file_path):
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+        
+    data = lines
+    for line in lines[5:]:
+        data.append(float(val.strip().replace(',', '.')) if val != "NAN" else np.nan for val in line.replace("\t", " ").strip().split(" "))
+    return data
+
+def read_data_to_array(file_path):
+    data = []
+    with open(file_path, 'r') as file:
+        for line in file:
+            line = line.strip()
+            if line:
+                row = re.findall(r'[-+]?\d*\.\d+|\d+', line)
+                row = [float(value) for value in row]
+                data.append(row)
+    return data
+
+def read_data_to_columns(file_path):
+    data = []
+    with open(file_path, 'r') as file:
+        for line in file:
+            line = line.strip()
+            if line:
+                row = re.findall(r'[-+]?\d*,\d+|\d+', line)
+                row = [float(value.replace(',', '.')) for value in row]
+                data.append(row)
+
+    # Transpose the 2D list to get the columns
+    columns = np.array(data)
+    
+    return columns
+
 def calc_task_238b(U_B, I_A, U_R):
     R = U_R / I_A
     R_err = np.sqrt((U_err(U_R) / I_A)**2 + (I_err(I_A) * U_R /I_A**2 )**2)
@@ -129,8 +172,7 @@ def calc_task_238b(U_B, I_A, U_R):
 
 def A238b(file_path):
     data = load_cassy_file(file_path)
-
-    U_B, I_A, U_R, P_W = data["U_B1"], data["I_A1"], data["U_B2"], data["P_1"] 
+    U_B, I_A, U_R, P_W = data["U_B1"], data["I_A1"] + 0.15, data["P_1"], data["f"] 
     (R, Rerr), (P_S, P_Serr), (cos_phi, cos_phi_err) = calc_task_238b(U_B, I_A, U_R)
 
     table_plot("Rohwerte", "U_B in V " ,np.round(U_B, 4), "I in A", np.round(I_A, 4), "U_R in V", np.round(U_R, 4), "P_W in W", np.round(P_W, 4))
@@ -145,25 +187,25 @@ def A238b(file_path):
 
     table_plot("", "U_B in V", U1, "del U_B in V", del_U1, "I in A", I, "del I in A", del_I, "R in Ω", r, "del R in Ω", del_R, "P_S in W", Ps, "del P_S in W", del_Ps, "P_S cos(φ) in W", pscos, "del P_S cos(φ) in W", del_Pscos)
   
-    P_max = (47*47) * math.pi *80 * 10**-6 *50
+    P_max = (47**2) * math.pi *80 * 10**-6 * 50
     R_max = 1/(2*math.pi*80*50*10**-6)
 
-    print(P_max)
-    print(R_max)
+    print("P_max= ", P_max)
+    print("R_max= ", R_max)
    
     fig, ax = plt.subplots()
-    ax.set_title("RC_Kreis")
-    ax.set_xlabel("R[Ω]")
-    ax.set_ylabel("P[W]")
+    ax.set_title(r"$RC$-Kreis", fontsize=20)
+    ax.set_xlabel(r"$R \: \left[ \Omega \right]$", fontsize=15)
+    ax.set_ylabel(r"$P \: \left[ \text{W} \right]$", fontsize=15)
     ax.grid()
 
     # Plot PS, PS cos_phi, PWv gegen R
-    ax.errorbar(R, P_S, yerr=P_Serr, xerr=Rerr, fmt="o", label="P_S", markersize=4)
-    ax.errorbar(R, P_S*cos_phi, xerr=Rerr, fmt="o", label="P_S cos(φ)", markersize=4)
-    ax.errorbar(R, P_W, yerr=Rerr, fmt="o", label="P_W", markersize=4)
+    ax.errorbar(R, P_S, yerr=P_Serr, xerr=Rerr, marker="+", ls="" , capsize=2, label="P_S", markersize=4, color="orange", ecolor="orange")
+    ax.errorbar(R, P_S*cos_phi, xerr=Rerr, marker="+", ls="" , capsize=2, label="P_S cos(φ)", markersize=4, color="darkviolet", ecolor="darkviolet")
+    ax.errorbar(R, P_W, yerr=Rerr, marker="+", ls="" , capsize=2, label="P_W", markersize=4, color="fuchsia", ecolor="fuchsia")
     ax.hlines(y = P_max, xmin = 0, xmax = R_max, color="red", linestyle="dotted", alpha=0.6)
     ax.vlines(x = R_max, ymin=0, ymax=P_max, color="red", linestyle="dotted", alpha=0.6)
-    ax.errorbar(R_max, P_max, color="red", label="P_max", fmt="o", markersize=4)
+    ax.errorbar(R_max, P_max, color="red", label="P_max", marker="+", ls="" , capsize=2, markersize=4)
     ax.legend(loc="upper right")
     plt.xlim(-0.2, 80)
     plt.ylim(-0.2, 60)
@@ -172,10 +214,12 @@ def A238b(file_path):
     
     
   
-file_path = "data/238_ag.txt"  
-#A238b(file_path)
+file_path = "data/238a.txt"  
+A238b(file_path)
 
 print("---------------------------------------------")
+
+
 
 def calc_task_238c(U1, I1, U2, I2, P1, P2):
 
@@ -229,32 +273,35 @@ def calc_task_238c(U1, I1, U2, I2, P1, P2):
                "P_Fe in W", pf, "del P_Fe in W", dpf,
                "n (eta)", et, "del n", det)
 
-    ax.errorbar(I2, P1, xerr=I_err(I2), yerr=P1err, fmt="o", markersize=4, label="P_W1")
-    ax.errorbar(I2, P2, xerr=I_err(I2), yerr=P2err, fmt="o", markersize=4, label="P_W2")
-    ax.legend(loc="upper right")  
-    ax.set_title("Wirkleistung")
-    ax.set_xlabel("I_2 [A]")
-    ax.set_ylabel("Wirkleistung [W]")
+    ax.errorbar(I2, P1, xerr=np.abs(I_err(I2)), yerr=np.abs(P1err), marker="+", ls="" , capsize=2, markersize=4, label=r"$P_{W_1}$", color="darkviolet", ecolor="darkviolet")
+    ax.errorbar(I2, P2, xerr=np.abs(I_err(I2)), yerr=np.abs(P2err), marker="+", ls="" , capsize=2, markersize=4, label=r"$P_{W_2}$", color="fuchsia", ecolor="fuchsia")
+    ax.legend(loc="lower right")  
+    ax.set_title(r"Wirkleistung $P_W$", fontsize=20)
+    ax.set_xlabel(r"$I_2 \: \left[ A \right]$", fontsize=15)
+    ax.set_ylabel(r"$P_W \left[ W \right]$", fontsize=15)
+    plt.tight_layout()
     plt.show()
 
     _, ax = plt.subplots()
     ax.grid()
-    ax.errorbar(I2, PC, xerr=I_err(I2), yerr=PCerr, fmt="o", markersize=4, label="P_Cu")
-    ax.errorbar(I2, PF, xerr=I_err(I2), yerr=PFerr, fmt="o", markersize=4, label="P_Fe")
-    ax.errorbar(I2, PV, xerr=I_err(I2), yerr=PVerr, fmt="o", markersize=4, label="P_V")
-    ax.legend(loc="upper right")  
-    ax.set_title("Verlustleistung")
-    ax.set_xlabel("I_2 [A]")
-    ax.set_ylabel("Verlustleistung [W]")
+    ax.errorbar(I2, PC, xerr=np.abs(I_err(I2)), yerr=np.abs(PCerr), marker="+", ls="" , capsize=2, markersize=4, label=r"$P_{Cu}$", color="orange", ecolor="orange")
+    ax.errorbar(I2, PV, xerr=np.abs(I_err(I2)), yerr=np.abs(PVerr), marker="+", ls="" , capsize=2, markersize=4, label=r"$P_V$", color="darkviolet", ecolor="darkviolet")
+    ax.errorbar(I2, PF, xerr=np.abs(I_err(I2)), yerr=np.abs(PFerr), marker="+", ls="" , capsize=2, markersize=4, label=r"$P_{Fe}$", color = "fuchsia", ecolor="fuchsia")
+    ax.legend(loc="right")  
+    ax.set_title(r"Verlustleistung", fontsize=20)
+    ax.set_xlabel(r"$I_2 \: \left[ \text{A} \right]$", fontsize=15)
+    ax.set_ylabel(r"Verlustleistung $\left[ \text{W} \right]$", fontsize=15)
+    plt.tight_layout()
     plt.show()
 
     _,ax= plt.subplots()
     ax.grid()
-    ax.errorbar(I2, eta, xerr=I_err(I2), yerr=eta_err, fmt="o", markersize=4)
+    ax.errorbar(I2, eta, xerr=np.abs(I_err(I2)), yerr=np.abs(eta_err), marker="+", ls="" , capsize=2, markersize=4, color="darkviolet", ecolor="darkviolet")
     ax.legend(loc="upper right")  
-    ax.set_title("Wirkungsgrad")
-    ax.set_xlabel("I_2 [A]")
-    ax.set_ylabel("Wirkungsgrad")
+    ax.set_title(r"Wirkungsgrad $\eta$", fontsize=20)
+    ax.set_xlabel(r"$I_2 \: \left[ \text{A} \right]$", fontsize=15)
+    ax.set_ylabel(r"Wirkungsgrad $\eta$", fontsize=15)
+    plt.tight_layout()
     plt.show()
 
 def task_238_d():
@@ -263,17 +310,29 @@ def task_238_d():
 def task_238_f(U1, U2, I2):
     plt.grid()
     plt.legend()
-    plt.title("Spannungsübertragung")
-    plt.errorbar(I2, U2/ U1, xerr=I_err(I2), yerr=(np.sqrt((U_err(U2) / U1)**2 + (U_err(U1)*U2/U1**2)**2)), fmt="o", markersize=4, label="U_2 / U_1")
+    plt.title(r"Spannungsübertragung", fontsize=20)
+    plt.errorbar(I2, U2/ U1, xerr=np.abs(I_err(I2)), yerr=(np.sqrt((U_err(U2) / U1)**2 + (U_err(U1)*U2/U1**2)**2)), marker="+", ls="" , capsize=2, markersize=3, ecolor="mediumorchid", color="mediumorchid")
+    plt.ylim([0.4, 1.2])
+    plt.xlabel(r"$I_2 \: \left[ \text{A} \right]$", fontsize=15)
+    plt.ylabel(r"$U_2 / U_1$", fontsize=15)
+    plt.tight_layout()
     plt.show()
 
 def A238c(file_path):
-    data = load_cassy_file(file_path)
-    calc_task_238c(data["U_B1"], data["I_A1"], data["U_B2"], data["I_A2"], data["P_1"], data["P_2"])
+    data = read_data_to_columns(file_path)
+    
+    print(data)
 
-    task_238_f(data["U_B1"], data["U_B2"], data["I_A2"])
+    U1, I1, U2, I2, P1, P2 = data[:,2], data[:,1], data[:,5], data[:,4], data[:,7], data[:,8]
+
+    calc_task_238c(U1, I1, U2, I2, P1, P2)
+
+
+    task_238_f(U1, U2, I2)
+
 
   
-file_path = "data/238_c.txt"
+file_path = "data/238c_1100.txt"
+
 A238c(file_path)
 

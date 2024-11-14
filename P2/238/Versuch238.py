@@ -9,6 +9,7 @@ from matplotlib import colors as mcolors
 
 
 colors = dict(mcolors.BASE_COLORS, **mcolors.CSS4_COLORS)
+plt.ioff()
 
 plt.rcParams['mathtext.fontset'] = 'stix'
 plt.rcParams['font.family'] = 'STIXGeneral'
@@ -43,6 +44,8 @@ def table_plot(title, *args):
     fig.update_layout(title=title)
 
     # Anzeigen der Tabelle
+    # fig.write_image("Figures/" + title + ".pdf", format="pdf", page_size='letter') 
+    # fig.write_html("Figures/" + title + ".html")
     fig.show()
 
     return df
@@ -175,7 +178,7 @@ def A238b(file_path):
     U_B, I_A, U_R, P_W = data["U_B1"], data["I_A1"] + 0.15, data["P_1"], data["f"] 
     (R, Rerr), (P_S, P_Serr), (cos_phi, cos_phi_err) = calc_task_238b(U_B, I_A, U_R)
 
-    table_plot("Rohwerte", "U_B in V " ,np.round(U_B, 4), "I in A", np.round(I_A, 4), "U_R in V", np.round(U_R, 4), "P_W in W", np.round(P_W, 4))
+    # table_plot("Rohwerte", "U_B in V " ,np.round(U_B, 4), "I in A", np.round(I_A, 4), "U_R in V", np.round(U_R, 4), "P_W in W", np.round(P_W, 4))
 
     U1,del_U1 = round_to_significant_error(U_B, U_err(U_B))
     U2,del_U2 = round_to_significant_error(U_R, U_err(U_R))
@@ -185,7 +188,7 @@ def A238b(file_path):
     
     del_Pscos, pscos = round_to_significant_error(P_S * cos_phi, np.sqrt((P_Serr * cos_phi)**2 + (cos_phi_err *P_S)**2))
 
-    table_plot("", "U_B in V", U1, "del U_B in V", del_U1, "I in A", I, "del I in A", del_I, "R in Ω", r, "del R in Ω", del_R, "P_S in W", Ps, "del P_S in W", del_Ps, "P_S cos(φ) in W", pscos, "del P_S cos(φ) in W", del_Pscos)
+    table_plot("A238b Werte", "U_B in V", U1, "del U_B in V", del_U1, "I in A", I, "del I in A", del_I, "R in Ω", r, "del R in Ω", del_R, "P_S in W", Ps, "del P_S in W", del_Ps, "P_S cos(φ) in W", pscos, "del P_S cos(φ) in W", del_Pscos)
   
     P_max = (47**2) * math.pi *80 * 10**-6 * 50
     R_max = 1/(2*math.pi*80*50*10**-6)
@@ -209,8 +212,9 @@ def A238b(file_path):
     ax.legend(loc="upper right")
     plt.xlim(-0.2, 80)
     plt.ylim(-0.2, 60)
-
+    plt.savefig("Figures/rc_k.pdf", format="pdf", dpi=1200)
     plt.show()
+    plt.close()  
     
     
   
@@ -263,7 +267,7 @@ def calc_task_238c(U1, I1, U2, I2, P1, P2):
     pf, dpf = round_to_significant_error(PF, PFerr)
     et, det = round_to_significant_error(eta, eta_err)
 
-    table_plot("", "U1 in V", u1, "del U1 in V", du1,"U2 in V", u2, "del U1 in V", du2,
+    table_plot("A238c Werte", "U1 in V", u1, "del U1 in V", du1,"U2 in V", u2, "del U1 in V", du2,
                "I1 in A", i1, "del I1 in A", di1, "I2 in A", i2, "del I2 in A", di2,
                "P1 in W", p1, "del P1 in W", dp1, "P2 in W", p2, "del P2 in W", dp2,
 
@@ -280,7 +284,9 @@ def calc_task_238c(U1, I1, U2, I2, P1, P2):
     ax.set_xlabel(r"$I_2 \: \left[ A \right]$", fontsize=15)
     ax.set_ylabel(r"$P_W \left[ W \right]$", fontsize=15)
     plt.tight_layout()
+    plt.savefig("Figures/wirkleist.pdf", format="pdf", dpi=1200)
     plt.show()
+    plt.close()
 
     _, ax = plt.subplots()
     ax.grid()
@@ -292,7 +298,9 @@ def calc_task_238c(U1, I1, U2, I2, P1, P2):
     ax.set_xlabel(r"$I_2 \: \left[ \text{A} \right]$", fontsize=15)
     ax.set_ylabel(r"Verlustleistung $\left[ \text{W} \right]$", fontsize=15)
     plt.tight_layout()
+    plt.savefig("Figures/Verlustleist.pdf", format="pdf", dpi=1200)
     plt.show()
+    plt.close()
 
     _,ax= plt.subplots()
     ax.grid()
@@ -302,7 +310,14 @@ def calc_task_238c(U1, I1, U2, I2, P1, P2):
     ax.set_xlabel(r"$I_2 \: \left[ \text{A} \right]$", fontsize=15)
     ax.set_ylabel(r"Wirkungsgrad $\eta$", fontsize=15)
     plt.tight_layout()
+    plt.savefig("Figures/wirkungsgrad.pdf", format="pdf", dpi=1200)
     plt.show()
+    plt.close()
+
+# plt.plot(I1, I2/I1)
+# plt.plot(I1, np.full(len(I1), 1/np.sqrt(2)))
+# plt.show()
+    plt.close()
 
 def task_238_d():
     ...
@@ -315,8 +330,60 @@ def task_238_f(U1, U2, I2):
     plt.ylim([0.4, 1.2])
     plt.xlabel(r"$I_2 \: \left[ \text{A} \right]$", fontsize=15)
     plt.ylabel(r"$U_2 / U_1$", fontsize=15)
+
+    sigma = 0.03
+    MoverL = np.sqrt(1 - sigma)
+    wl = 366
+    R = U2/I2
+    RV = 0.6
+
+    U2U1_L = (R / (R + 2*RV)) * MoverL / (np.sqrt(1+((sigma*wl) / R)**2)) 
+
+    sigma = 0.44
+    MoverL = np.sqrt(1 - sigma)
+    wl = 90
+
+    U2U1_K2 = (R / (R + 2*RV)) * MoverL / (np.sqrt(1+((sigma*wl) / R)**2)) 
+    
+    sigma = 0.44
+    MoverL = np.sqrt(1 - sigma)
+    wl = 366
+
+    U2U1_K1 = (R / (R + 2*RV)) * MoverL / (np.sqrt(1+((sigma*wl) / R)**2)) 
+ 
+    sigma = 0.1754
+    MoverL = np.sqrt(1 - sigma)
+    wl = 101.5
+
+    U2U1_31 = (R / (R + 2*RV)) * MoverL / (np.sqrt(1+((sigma*wl) / R)**2)) 
+
+    sigma = 0.1754
+    MoverL = np.sqrt(1 - sigma)
+    wl = 90
+
+    U2U1_32 = (R / (R + 2*RV)) * MoverL / (np.sqrt(1+((sigma*wl) / R)**2)) 
+
+    sigma = 0
+    MoverL = np.sqrt(1 - sigma)
+    wl = 102
+
+    sigma = 0.1754
+    MoverL = np.sqrt(1 - sigma)
+    wl = 366
+
+    U2U1_4 = (R / (R + 2*RV)) * MoverL / (np.sqrt(1+((sigma*wl) / R)**2)) 
+
+    plt.plot(I2, U2U1_L, color="crimson", label=r"Leerlauffall $R= \infty$")
+    plt.plot(I2, U2U1_31, color="blue", label=r"Impedanzverh. mit $ \omega L = 101.5 \Omega $")
+    plt.plot(I2, U2U1_32, color="green", label=r"Impedanzverh. mit $ \omega L = 90 \Omega $")
+    plt.plot(I2, U2U1_4, color="orange", label=r"Impedanzverh. mit $ \omega L = 366 \Omega $")
+    plt.plot(I2, U2U1_K1, color="fuchsia", label=r"Kurzschlussfall mit $ \omega L = 366 \Omega $")
+    plt.plot(I2, U2U1_K2, color="brown", label=r"Kurzschlussfall mit $\omega L = 90$ \Omega$")
+    plt.legend(loc="lower left", prop={'size': 10})
     plt.tight_layout()
+    plt.savefig("Figures/Spannungsübert.pdf", format="pdf", dpi=1200)
     plt.show()
+    plt.close()
 
 def A238c(file_path):
     data = read_data_to_columns(file_path)

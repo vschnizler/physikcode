@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import math
+import plotly.graph_objects as go
+import pandas as pd
 
 plt.rcParams['text.usetex'] = True
 
@@ -34,6 +36,33 @@ class RToVarphiMap:
     def get_mapping(self):
         # Zugriffsmethode, um das gesamte Mapping als Dictionary zu erhalten
         return self.mapping
+
+def table_plot(title, *args):
+    if len(args) % 2 != 0:
+        raise ValueError("Bitte geben Sie ein Paar aus (Spaltenname, Array) für jede Spalte an.")
+
+    # Erstellen des DataFrames
+    data = {}
+    for i in range(0, len(args), 2):
+        column_name = args[i]
+        array = args[i + 1]
+        data[column_name] = array
+
+    df = pd.DataFrame(data)
+
+    # Erstelle die Plotly-Tabelle
+    fig = go.Figure(data=[go.Table(
+        header=dict(values=df.columns, fill_color='paleturquoise', align='center', font_size=14),
+        cells=dict(values=[df[col] for col in df.columns], fill_color='lavender', align='center', font_size=12))
+    ])
+
+    # Titel hinzufügen
+    fig.update_layout(title=title)
+
+    # Anzeigen der Tabelle
+    fig.show()
+
+    return df
 
 def load_data(filepath):
     data = {}
@@ -135,30 +164,34 @@ def geradenfit(x, y, x_err, y_err):
     x2_strich = mittel_var(y_err,x ** 2)
     y_strich = mittel_var(y_err,y)
     xy_strich = mittel_var(y_err,x * y)
-    #print(f'{x_strich = }')
-    #print(f'{y_strich = }')
-    #print(f'{x2_strich =}')
-    #print(f'{xy_strich = }')
-    #print('----------------------------------------------------------------------------')
+    
     m = (xy_strich - (x_strich * y_strich)) / (x2_strich - x_strich ** 2)
     b = (x2_strich * y_strich - x_strich * xy_strich) / (x2_strich - x_strich ** 2)
-    #print(f'Steigung: {m = }')
-    #print(f'y-Achsenabschnitt: {b = }')
-
+   
     sigmax = sigma(x_err, n)
     sigmay = sigma(y_err, n)
-
     dm = np.sqrt(sigmay / (n * (x2_strich - x_strich ** 2)))
     db = np.sqrt(sigmay * x2_strich / (n * (x2_strich - (x_strich ** 2))))
-    #print(f'Sigma y: {sigmay = }')
-    #print(f'Fehler Steigung: {dm = }')
-    #print(f'Fehler y-Achsenabschnitt {db = }')
-    # create dictionary for further calculations
+
+    # Berechnung der Anpassungsgüte
+    y_fit = m * x + b  # Angepasste Gerade
+    residuals = y - y_fit  # Residuen
+    chi_squared = np.sum((residuals / y_err) ** 2)  # Chi-Quadrat
+    chi_squared_red = chi_squared / (n - 2)  # Reduziertes Chi-Quadrat
+
+    # R^2 Berechnung
+    ss_res = np.sum(residuals ** 2)  # Residuenquadratsumme
+    ss_tot = np.sum((y - np.mean(y)) ** 2)  # Gesamtquadratsumme
+    r_squared = 1 - (ss_res / ss_tot)
+    
     dict = {
         'm':m,
         'b':b,
         'dm':dm,
         'db':db,
+        'chi_squared': chi_squared,
+        'chi_squared_red': chi_squared_red,
+        'r_squared': r_squared
     }
     return dict
 
@@ -178,6 +211,7 @@ def task_236_c(data):
     res = geradenfit(r, np.pow(varphi, -1), r, dvarphi)
 
     ax.grid()
+    ax.set_title("Diagramm 1: Galvanometer 236.c")
     ax.set_xlabel(r'R in $\Omega$')
     ax.set_ylabel(r'$\frac 1\varphi$ in Skt')
     ax.set_ylim(0, 0.04)
@@ -185,6 +219,13 @@ def task_236_c(data):
     ax.plot(r, res["m"] * r + res["b"], label="fit")
     ax.legend()
     plt.show()
+    print("fit eins")
+    print(res["m"])
+    print(res["dm"])
+    print(res["b"])
+    print(res["db"])
+    print(res["r_squared"])
+    print("-------")
     
     task_236_ef(data["NVU_1"], res["m"], res["dm"], res["b"], res["db"])
 
@@ -224,6 +265,7 @@ def task_236_d(data, varphi):
 
     c = np.array(varphi[r]) / i
     delc = np.sqrt((dphi / i)**2 + (di * varphi[r] /i**2)**2)
+    table_plot("Berechnung der Stromempfindlichkeit","Ausschlag in SKt", np.array(varphi[r]), "I in mA", i*10**-3, "c_I in Skt/(mikro A)", np.round(c, 3), "del c in Skt/(mikro A)", np.round(delc, 3))
     print("d:  ")
     print(c.mean())
     print(delc.mean())
@@ -245,12 +287,21 @@ def task_236_ij(data):
 
     fig, ax = plt.subplots()
     ax.grid()
+    ax.set_title("Diagramm 2: Ballistisches Galvanometer")
     ax.set_xlabel(r'$\Delta$ t in s')
     ax.set_ylabel(r'$\ln(\varphi)$')
     ax.errorbar(t, lnvar, xerr=dt,yerr=dlnvar, fmt="o", label="val")
     ax.plot(t, res["m"]* t + res["b"], label="fit")
     ax.legend()
     plt.show()
+    
+    print("fit")
+    print(res["m"])
+    print(res["dm"])
+    print(res["b"])
+    print(res["db"])
+    print(res["r_squared"])
+    print("------")
 
     nvu = data["NVU_1"]
     res["m"] -= 0.003 # dont mind me...

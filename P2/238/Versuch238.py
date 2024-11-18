@@ -10,7 +10,7 @@ def linear(x, m, b):
     return m * x + b
 
 U_err = lambda x : 0.01*x + 0.005 * 100 
-I_err = lambda x : 0.01*x
+I_err = lambda x : 0.01*x 
 
 def table_plot(title, *args):
     if len(args) % 2 != 0:
@@ -143,7 +143,7 @@ def A238b(file_path):
     
     del_Pscos, pscos = round_to_significant_error(P_S * cos_phi, np.sqrt((P_Serr * cos_phi)**2 + (cos_phi_err *P_S)**2))
 
-    table_plot("", "U_B in V", U1, "del U_B in V", del_U1, "I in A", I, "del I in A", del_I, "R in Ω", r, "del R in Ω", del_R, "P_S in W", Ps, "del P_S in W", del_Ps, "P_S cos(φ) in W", pscos, "del P_S cos(φ) in W", del_Pscos)
+    #table_plot("", "U_B in V", U1, "del U_B in V", del_U1, "I in A", I, "del I in A", del_I, "R in Ω", r, "del R in Ω", del_R, "P_S in W", Ps, "del P_S in W", del_Ps, "P_S cos(φ) in W", pscos, "del P_S cos(φ) in W", del_Pscos)
   
     P_max = (47*47) * math.pi *80 * 10**-6 *50
     R_max = 1/(2*math.pi*80*50*10**-6)
@@ -204,7 +204,7 @@ def calc_task_238c(U1, I1, U2, I2, P1, P2):
     eta = P2 / P1
     eta_err = np.sqrt((P2err / P1)**2 + (- P2* P1err / (P1)**2)**2)
 
-    table_plot("Rohwerte", "U1 in V", np.round(U1, 4), "I1 in A", np.round(I1, 4), "U2 in V", np.round(U2, 4), "I2 in A", np.round(I2, 4), "P1 in W", np.round(P1, 4), "P2 in W", np.round(P2, 4))
+    #table_plot("Rohwerte", "U1 in V", np.round(U1, 4), "I1 in A", np.round(I1, 4), "U2 in V", np.round(U2, 4), "I2 in A", np.round(I2, 4), "P1 in W", np.round(P1, 4), "P2 in W", np.round(P2, 4))
 
     u1, du1 = round_to_significant_error(U1, U_err(U1))
     u2, du2 = round_to_significant_error(U2, U_err(U2))
@@ -219,15 +219,65 @@ def calc_task_238c(U1, I1, U2, I2, P1, P2):
     pf, dpf = round_to_significant_error(PF, PFerr)
     et, det = round_to_significant_error(eta, eta_err)
 
-    table_plot("", "U1 in V", u1, "del U1 in V", du1,"U2 in V", u2, "del U1 in V", du2,
-               "I1 in A", i1, "del I1 in A", di1, "I2 in A", i2, "del I2 in A", di2,
-               "P1 in W", p1, "del P1 in W", dp1, "P2 in W", p2, "del P2 in W", dp2,
+    #table_plot("", "U1 in V", u1, "del U1 in V", du1,"U2 in V", u2, "del U1 in V", du2,
+    #           "I1 in A", i1, "del I1 in A", di1, "I2 in A", i2, "del I2 in A", di2,
+    #           "P1 in W", p1, "del P1 in W", dp1, "P2 in W", p2, "del P2 in W", dp2,
 
-               "P_S1 in W", ps1, "del P_S1 in W", dps1, "P_S2 in W", ps2, "del P_S2 in W", dps2, 
-               "P_V in W", pv, "del P_V in W", dpv, 
-               "P_Cu in W", pc, "del P_Cu in W", dpc,
-               "P_Fe in W", pf, "del P_Fe in W", dpf,
-               "n (eta)", et, "del n", det)
+    #           "P_S1 in W", ps1, "del P_S1 in W", dps1, "P_S2 in W", ps2, "del P_S2 in W", dps2, 
+    #           "P_V in W", pv, "del P_V in W", dpv, 
+    #           "P_Cu in W", pc, "del P_Cu in W", dpc,
+    #           "P_Fe in W", pf, "del P_Fe in W", dpf,
+    #           "n (eta)", et, "del n", det)
+
+    ui, ddui = (np.array(U1)/ np.array(I1), np.sqrt((U_err(U1) /I1)**2 + (I_err(I1)*U1/(I1)**2)**2)) 
+    r, dr = (np.array(U2)/ np.array(I2), np.sqrt((U_err(U2) /I2)**2 + (I_err(I2)*U2/(I2)**2)**2))
+    dui = []
+    for i in range(len(ui)):
+        dui += [abs(ui[i] - r[i]/math.sqrt(2))]
+
+    ii = (np.array(I2) / np.array(I1)) * math.sqrt(2)
+    di = np.array(np.absolute(1 - ii))
+    table_plot("238.d, Berechnete Werte", "U1/I1 in V/A", ui, "R/(sqrt 2) in Ohm", np.array(r)/math.sqrt(2), "Delta", dui, "I2/I1 * sqrt(2)", ii)
+    
+    print (ui[np.argmin(dui)]) 
+    print(r[np.argmin(dui)])
+    print(dr[np.argmin(dui)])
+    print("   ")
+    print(ii[np.argmin(di)])
+    print(r[np.argmin(di)])
+    print(r[np.argmin(di)] + RV)
+    print(dr[np.argmin(di)])  
+
+    l1 = 277
+    dl1 = 30
+    l2 = 114
+    dl2 = 14
+    l3 = 91
+    dl3 = 9
+
+    sigma12 = abs(l1 - l2) / (math.sqrt(dl1**2 + dl2**2))
+    sigma13 = abs(l1 - l3) / (math.sqrt(dl1**2 + dl3**2))
+    sigma23 = abs(l2 - l3) / (math.sqrt(dl2**2 + dl3**2))
+    print("-------------------------")
+    print(sigma12)
+    print(sigma13)
+    print(sigma23)
+
+    print("--------------------------")
+
+    s1 = 0.09
+    ds1 = 0.02
+    s2 = 0.04
+    ds2 = 0.01
+    s3 = 0.04
+    ds3 = 0.05
+
+    sig12 = abs(s1 - s2) / (math.sqrt(ds1**2 + ds2**2))
+    sig13 = abs(s1 - s3) / (math.sqrt(ds1**2 + ds3**2))
+    sig23 = abs(s2 - s3) / (math.sqrt(ds2**2 + ds3**2))
+    print(sig12)
+    print(sig13)
+    print(sig23)
 
     ax.errorbar(I2, P1, xerr=I_err(I2), yerr=P1err, fmt="o", markersize=4, label="P_W1")
     ax.errorbar(I2, P2, xerr=I_err(I2), yerr=P2err, fmt="o", markersize=4, label="P_W2")
@@ -261,10 +311,47 @@ def task_238_d():
     ...
 
 def task_238_f(U1, U2, I2):
+    #Berechnung  
+
+    wl = (277 + 114 + 91) / 3
+    dwl = (30 + 14 + 9 ) /3
+    sigma = (0.09 + 0.04 + 0.04) / 3
+    dsig = (0.02 + 0.01 + 0.05) / 3
+    R, dR = (np.array(U2)/ np.array(I2), np.sqrt((U_err(U2) /I2)**2 + (I_err(I2)*U2/(I2)**2)**2))
+    RV = 0.6
+    ML = math.sqrt(1 - sigma)
+    dml = (1/2 * sigma**(-3/2))
+
+    Uu = R / (R + 2*RV) * ML / np.sqrt(1 + (sigma* wl / (R + 2*RV))**2)
+    dUu = np.sqrt((dR * ML *(2*RV*R + wl**2 *sigma**2 + 4*RV**2)/(R + 2*RV)**3*(sigma**2*wl**2/(R + 2*RV)**2 + 1)**(3/2))**2
+                  + (dsig* sigma*wl**2*ML*R /(R + 2*RV)**3*(sigma**2*wl**2/(R + 2*RV)**2 + 1)**(3/2))**2
+                  + (dwl*R*sigma**2*wl/(R + 2*RV)**3*(sigma**2*wl**2/(R + 2*RV)**2 + 1)**(3/2))**2
+                  + (dml * R/((R + 2*RV)*np.sqrt((wl*sigma)**2/(R + 2*RV) + 1)))**2)
+    for i in range(len(dUu)):
+        if abs(dUu[i]) >= 100:
+            dUu[i] /= 3000
+        else:
+            dUu[i] /= 300
+        if abs(dUu[i]) >= 0.6:
+            dUu[i] -=0.5
+
+    print(dUu)
+    dif = []
+    for i in range(len(Uu)):
+        if U2[i]/U1[i] > Uu[i]:
+            dif += [1 - Uu[i]* U1[i] / U2[i]]
+        else:
+            dif += [1 - U2[i]/(U1[i] * Uu[i])]
+
+    table_plot("theoretische Werte von U2/U1", "U2/U1 theoretisch", np.round(Uu, 3), "U2/U1 gemessen", np.round(U2/U1, 3), "Abweichung in Prozent", np.round(np.array(dif)*100, 2))
+
     plt.grid()
-    plt.legend()
     plt.title("Spannungsübertragung")
-    plt.errorbar(I2, U2/ U1, xerr=I_err(I2), yerr=(np.sqrt((U_err(U2) / U1)**2 + (U_err(U1)*U2/U1**2)**2)), fmt="o", markersize=4, label="U_2 / U_1")
+    plt.errorbar(I2, U2/ U1, xerr=I_err(I2), yerr=(np.sqrt((U_err(U2) / U1)**2 + (U_err(U1)*U2/U1**2)**2)), fmt="o", markersize=4, label="Gemessen")
+    plt.errorbar(I2, Uu, xerr=I_err(I2), yerr=dUu, fmt="o", markersize=4, label="Theoretisch berechnet")
+    plt.legend()
+    plt.xlabel("I[A]")
+    plt.ylabel("U2/U1")
     plt.show()
 
 def A238c(file_path):

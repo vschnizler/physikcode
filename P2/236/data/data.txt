@@ -1,14 +1,14 @@
 #Section b
 #Name;Value;Uncertainty
-R_Gr all;421.5;5
+R_Gr all;207.1;5
 R_Gr none;1262;5
 
 #Section c
 #Name;Value;Uncertainty
 R_g;114;10
-R_1;100.5;0.1
-R_2;4.5;0.1
-U_0;2;0.001
+R_1;1101;0.1
+R_2;15.3;0.1
+U_0;3.892;0.001
 
 #Messung
 #R in Ohm;Varphi in Skt; delta R; delta varphi

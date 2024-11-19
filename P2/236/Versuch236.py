@@ -208,14 +208,15 @@ def task_236_c(data):
     dvarphi = (np.array(del_varphi) * 1/np.array(varphi)**2)
     r = np.array(r)
 
-    res = geradenfit(r, np.pow(varphi, -1), r, dvarphi)
+    res = geradenfit(r, np.power(varphi, -1), r, dvarphi)
+    
 
     ax.grid()
     ax.set_title("Diagramm 1: Galvanometer 236.c")
     ax.set_xlabel(r'R in $\Omega$')
     ax.set_ylabel(r'$\frac 1\varphi$ in Skt')
     ax.set_ylim(0, 0.04)
-    ax.errorbar(r, np.pow(varphi, -1),xerr=delr, yerr=dvarphi, fmt="o", capsize=2, label="val")
+    ax.errorbar(r, np.power(varphi, -1),xerr=delr, yerr=dvarphi, fmt="o", capsize=2, label="val")
     ax.plot(r, res["m"] * r + res["b"], label="fit")
     ax.legend()
     plt.show()

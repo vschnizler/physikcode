@@ -202,11 +202,12 @@ def task_236_c(data):
     messung = data["Messung_1"]
 
     r = [x["R in Ohm"] for x in messung["data"]]
-    delr = [x["delta R"] for x in messung["data"]]
-    varphi = [x["Varphi in Skt"] for x in messung["data"]]
-    del_varphi = [x["delta varphi"] for x in messung["data"]]
-    dvarphi = (np.array(del_varphi) * 1/np.array(varphi)**2)
     r = np.array(r)
+    delr = [x["delta R"] for x in messung["data"]]
+    delr = np.abs(r*0.01)
+    varphi = np.array([x["Varphi in Skt"] for x in messung["data"]])
+    del_varphi = np.full(len(varphi), 2)
+    dvarphi = (np.array(del_varphi) * 1/np.array(varphi)**2)
 
     res = geradenfit(r, np.power(varphi, -1), r, dvarphi)
     
@@ -215,8 +216,7 @@ def task_236_c(data):
     ax.set_title("Diagramm 1: Galvanometer 236.c")
     ax.set_xlabel(r'R in $\Omega$')
     ax.set_ylabel(r'$\frac 1\varphi$ in Skt')
-    ax.set_ylim(0, 0.04)
-    ax.errorbar(r, np.power(varphi, -1),xerr=delr, yerr=dvarphi, fmt="o", capsize=2, label="val")
+    ax.errorbar(r, 1/varphi,xerr=delr, yerr=dvarphi, fmt="o", capsize=2, label="val")
     ax.plot(r, res["m"] * r + res["b"], label="fit")
     ax.legend()
     plt.show()
@@ -240,7 +240,14 @@ def task_236_ef(data, m, dm, b, db):
     R_1, dR1 = next(((x["Value"], x["Uncertainty"]) for x in data if x["Name"] == "R_1"), None)
     U_0, dU = next(((x["Value"], x["Uncertainty"]) for x in data if x["Name"] == "U_0"), None)
     
-    print(dR2)
+    R2 = np.array(R_2)
+    R1 = np.array(R_1)
+    U_0 = np.array(U_0)
+
+    dR2 = R_2 * 0.01
+    dR1 = R_1 * 0.01
+    dU = U_0 * 0.01
+
     # m = (R_1 + R_2) / (c * U_0 * R_2)
     c = (R_1 + R_2) / (U_0 * R_2 * m)
     dc = math.sqrt((dR1 / (m*U_0*R_2))**2 + (dR2 *R_1/(m * U_0 * R_2**2))**2 + ( dU*(R_1+R_2)/(m*U_0**2 * R_2))**2 + (dm * (R_1+R_2)/(m**2 *U_0*R_2) )**2)
@@ -279,7 +286,7 @@ def task_236_ij(data):
     t = np.array([x["t in s"] for x in messung["data"]])
     dt = 0.2
     varphi = [x["varphi in skt"] for x in messung["data"]]
-    del_varphi = 0.8
+    del_varphi = 2
 
     lnvar = np.log(varphi)
     dlnvar = del_varphi / np.array(varphi)
@@ -309,7 +316,7 @@ def task_236_ij(data):
     
     C = next((x["Value"]*10**-6 for x in nvu if x["Name"] == "C"), None)
     R_3 = next((x["Value"] for x in nvu if x["Name"] == "R_3"), None)
-    dC = 0.2 * C
+    dC = 0.01 * C
 
     r3 = -1/(C * res["m"])
     dr3 = math.sqrt((dC/(C**2 * res["m"]))**2 + (res["dm"]/(res["m"]**2 * C)**2))

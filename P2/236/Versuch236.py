@@ -4,7 +4,8 @@ import math
 import plotly.graph_objects as go
 import pandas as pd
 
-plt.rcParams['text.usetex'] = True
+plt.rcParams['mathtext.fontset'] = 'stix'
+plt.rcParams['font.family'] = 'STIXGeneral'
 
 class RToVarphiMap:
     def __init__(self, r_values, varphi_values):
@@ -132,6 +133,28 @@ def load_data(filepath):
 
     return data
 
+def optimize_fit(x, y, start, end, step):
+    x = np.array(x)
+    y = np.array(y)
+    
+    p, err1, *_ = np.polyfit(x, 1/(y + start), 1, full=True)
+    
+    iter = start
+    hold = start
+    
+    while(iter <= end):
+        
+        iter = iter + step
+        
+        p, err2, *_ = np.polyfit(x, 1/(y + iter), 1, full=True)
+        print(err2, "   ", iter)
+        
+        if(np.sqrt(err2) < np.sqrt(err1)):
+            hold = iter
+            
+        err1 = err2
+    return hold
+
 def geradenfit(x, y, x_err, y_err):
     x = np.array(x)
     y = np.array(y)
@@ -206,26 +229,32 @@ def task_236_c(data):
     delr = [x["delta R"] for x in messung["data"]]
     delr = np.abs(r*0.01)
     varphi = np.array([x["Varphi in Skt"] for x in messung["data"]])
+    
+    
+    shift = optimize_fit(r, varphi, 0.00, 7.00, 0.01)
+    print(shift)
+    varphi = varphi + shift
+    
     del_varphi = np.full(len(varphi), 2)
     dvarphi = (np.array(del_varphi) * 1/np.array(varphi)**2)
-
     res = geradenfit(r, np.power(varphi, -1), r, dvarphi)
+    
     
 
     ax.grid()
     ax.set_title("Diagramm 1: Galvanometer 236.c")
     ax.set_xlabel(r'R in $\Omega$')
-    ax.set_ylabel(r'$\frac 1\varphi$ in Skt')
+    ax.set_ylabel(r'$\frac{1}{\varphi} \: $ in Skt')
     ax.errorbar(r, 1/varphi,xerr=delr, yerr=dvarphi, fmt="o", capsize=2, label="val")
     ax.plot(r, res["m"] * r + res["b"], label="fit")
     ax.legend()
     plt.show()
     print("fit eins")
-    print(res["m"])
-    print(res["dm"])
-    print(res["b"])
-    print(res["db"])
-    print(res["r_squared"])
+    print("m= ", res["m"])
+    print("dm= ", res["dm"])
+    print("b= ", res["b"])
+    print("db= ", res["db"])
+    print("r_squared= ", res["r_squared"])
     print("-------")
     
     task_236_ef(data["NVU_1"], res["m"], res["dm"], res["b"], res["db"])
@@ -264,16 +293,19 @@ def task_236_ef(data, m, dm, b, db):
 def task_236_d(data, varphi):
     #c_i = varphi/ I
     
+    wert = 159578
+    
     messung = data["Messung_1"]
     r = [x["R in Ohm"] for x in messung["data"]]
     i = np.array([x["I in mA"]*10**3 for x in messung["data"]])
     di = np.array([x["delta I"]*10**3 for x in messung["data"]])
-
+    
     dphi = 3
 
-    c = np.array(varphi[r]) / i
-    delc = np.sqrt((dphi / i)**2 + (di * varphi[r] /i**2)**2)
-    table_plot("Berechnung der Stromempfindlichkeit","Ausschlag in SKt", np.array(varphi[r]), "I in mA", i*10**-3, "c_I in Skt/(mikro A)", np.round(c, 3), "del c in Skt/(mikro A)", np.round(delc, 3))
+    c = (10**6) * np.array(varphi[r]) / i
+    abw = (wert - c) / c
+    delc = (10**6) * np.sqrt((dphi / i)**2 + (di * varphi[r] /i**2)**2)
+    table_plot("Berechnung der Stromempfindlichkeit","Ausschlag in SKt", np.array(varphi[r]), "I in mA", i*10**-3, "c_I in Skt/(mikro A)", np.round(c, 3), "del c in Skt/(A)", np.round(delc, 3), "Abw. zu Fit [%]", np.abs(np.round(100 * abw, 4)))
     print("d:  ")
     print(c.mean())
     print(delc.mean())

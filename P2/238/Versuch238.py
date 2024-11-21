@@ -44,7 +44,8 @@ def table_plot(title, *args):
     fig.update_layout(title=title)
 
     # Anzeigen der Tabelle
-    # fig.write_image("Figures/" + title + ".pdf", format="pdf", page_size='letter') 
+    
+    # fig.write_image("Figures/" + title + ".pdf", format="pdf") 
     # fig.write_html("Figures/" + title + ".html")
     fig.show()
 
@@ -267,15 +268,15 @@ def calc_task_238c(U1, I1, U2, I2, P1, P2):
     pf, dpf = round_to_significant_error(PF, PFerr)
     et, det = round_to_significant_error(eta, eta_err)
 
-    table_plot("A238c Werte", "U1 in V", u1, "del U1 in V", du1,"U2 in V", u2, "del U1 in V", du2,
-               "I1 in A", i1, "del I1 in A", di1, "I2 in A", i2, "del I2 in A", di2,
-               "P1 in W", p1, "del P1 in W", dp1, "P2 in W", p2, "del P2 in W", dp2,
+    table_plot("A238c Werte", "U1 in V", u1[0::10], "del U1 in V", du1[0::10],"U2 in V", u2[0::10], "del U1 in V", du2[0::10],
+               "I1 in A", i1[0::10], "del I1 in A", di1[0::10], "I2 in A", i2[0::10], "del I2 in A", di2[0::10],
+               "P1 in W", p1[0::10], "del P1 in W", dp1[0::10], "P2 in W", p2[0::10], "del P2 in W", dp2[0::10],
 
-               "P_S1 in W", ps1, "del P_S1 in W", dps1, "P_S2 in W", ps2, "del P_S2 in W", dps2, 
-               "P_V in W", pv, "del P_V in W", dpv, 
-               "P_Cu in W", pc, "del P_Cu in W", dpc,
-               "P_Fe in W", pf, "del P_Fe in W", dpf,
-               "n (eta)", et, "del n", det)
+               "P_S1 in W", ps1[0::10], "del P_S1 in W", dps1[0::10], "P_S2 in W", ps2[0::10], "del P_S2 in W", dps2[0::10], 
+               "P_V in W", pv[0::10], "del P_V in W", dpv[0::10], 
+               "P_Cu in W", pc[0::10], "del P_Cu in W", dpc[0::10],
+               "P_Fe in W", pf[0::10], "del P_Fe in W", dpf[0::10],
+               "n (eta)", et[0::10], "del n", det[0::10])
 
     ax.errorbar(I2, P1, xerr=np.abs(I_err(I2)), yerr=np.abs(P1err), marker="+", ls="" , capsize=2, markersize=4, label=r"$P_{W_1}$", color="darkviolet", ecolor="darkviolet")
     ax.errorbar(I2, P2, xerr=np.abs(I_err(I2)), yerr=np.abs(P2err), marker="+", ls="" , capsize=2, markersize=4, label=r"$P_{W_2}$", color="fuchsia", ecolor="fuchsia")

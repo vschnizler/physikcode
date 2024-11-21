@@ -2,7 +2,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 import plotly.graph_objects as go
+from matplotlib import colors as mcolors
+from tabulate import tabulate
 import pandas as pd
+
+colors = dict(mcolors.BASE_COLORS, **mcolors.CSS4_COLORS)
 
 plt.rcParams['mathtext.fontset'] = 'stix'
 plt.rcParams['font.family'] = 'STIXGeneral'
@@ -38,6 +42,44 @@ class RToVarphiMap:
         # Zugriffsmethode, um das gesamte Mapping als Dictionary zu erhalten
         return self.mapping
 
+def plot_table(columns, col_names, filename, title):
+    """
+    Plots a table from a list of numpy arrays (columns) and saves it as a PNG file.
+    
+    Parameters:
+    columns (list of numpy.ndarray): The data to be plotted in the table, where each element is a column.
+    col_names (list of str): The names of the columns.
+    filename (str, optional): The name of the output PNG file.
+    """
+    # Get the maximum number of rows
+    max_rows = max(len(col) for col in columns)
+    
+    # Create a 2D numpy array to hold the data
+    data = np.full((max_rows, len(columns)), np.nan)
+    
+    # Fill the data array with the input columns
+    for i, col in enumerate(columns):
+        data[:len(col), i] = col
+    
+    # Create a figure and axis
+    fig, ax = plt.subplots(figsize=(len(columns) * 1.5, max_rows * 0.5))
+    ax.axis('tight')
+    ax.axis('off')
+    
+    # Create the table
+    the_table = ax.table(cellText=data.astype(str),
+                        colLabels=col_names,
+                        loc='center')
+    the_table.auto_set_font_size(False)
+    the_table.set_fontsize(13)
+    the_table.scale(1, 1.5)
+    # Save the figure
+    
+    plt.title(title, fontsize=20)
+    plt.tight_layout()
+    plt.savefig(filename, dpi=300)
+    plt.show()
+
 def table_plot(title, *args):
     if len(args) % 2 != 0:
         raise ValueError("Bitte geben Sie ein Paar aus (Spaltenname, Array) für jede Spalte an.")
@@ -62,7 +104,7 @@ def table_plot(title, *args):
 
     # Anzeigen der Tabelle
     fig.show()
-
+    fig
     return df
 
 def load_data(filepath):
@@ -245,9 +287,9 @@ def task_236_c(data):
     ax.set_title("Diagramm 1: Galvanometer 236.c")
     ax.set_xlabel(r'R in $\Omega$')
     ax.set_ylabel(r'$\frac{1}{\varphi} \: $ in Skt')
-    ax.errorbar(r, 1/varphi,xerr=delr, yerr=dvarphi, fmt="o", capsize=2, label="val")
-    ax.plot(r, res["m"] * r + res["b"], label="fit")
-    ax.legend()
+    ax.errorbar(r, 1/varphi,xerr=delr, yerr=dvarphi, fmt="o", capsize=1.5, color='indigo', ecolor='indigo')
+    ax.plot(r, res["m"] * r + res["b"], color='red')
+    plt.savefig("Figures/236c.pdf", dpi=1200, format="pdf")
     plt.show()
     print("fit eins")
     print("m= ", res["m"])
@@ -261,7 +303,6 @@ def task_236_c(data):
 
     return RToVarphiMap(r, varphi)
     
-
 def task_236_ef(data, m, dm, b, db):
 
     print("e")
@@ -289,7 +330,6 @@ def task_236_ef(data, m, dm, b, db):
     print(R_g)
     print(dRg)
     
-    
 def task_236_d(data, varphi):
     #c_i = varphi/ I
     
@@ -305,34 +345,45 @@ def task_236_d(data, varphi):
     c = (10**6) * np.array(varphi[r]) / i
     abw = (wert - c) / c
     delc = (10**6) * np.sqrt((dphi / i)**2 + (di * varphi[r] /i**2)**2)
-    table_plot("Berechnung der Stromempfindlichkeit","Ausschlag in SKt", np.array(varphi[r]), "I in mA", i*10**-3, "c_I in Skt/(mikro A)", np.round(c, 3), "del c in Skt/(A)", np.round(delc, 3), "Abw. zu Fit [%]", np.abs(np.round(100 * abw, 4)))
+    names = [r"Ausschlag $\: \left[ \text{SKt.} \right]$", r"$I \: \left[ \text{mA} \right]$", r"$c_I \: \left[ \frac{\text{SKt}}{\text{mA}} \right]$", r"$\Delta c \: \left[ \frac{\text{SKt}}{\text{A}} \right]$", r"Abw. zu Fit $\: \left[ \% \right]$"]
+    title = r"Berechnung der Stromempfindlichkeit $c_I$"
+    values = [np.round(np.array(varphi[r]), 3), i*10**-3, np.round(c, 0), np.round(delc, 3), np.abs(np.round(100 * abw, 4))]
+    filename = "Figures/236d_table.pdf"
+    
+    plot_table(values, names, filename, title)
+    
     print("d:  ")
     print(c.mean())
     print(delc.mean())
     print("------------")
     
-
 def task_236_ij(data):
-    print(data)
     messung = data["Messung_1"]
     t = np.array([x["t in s"] for x in messung["data"]])
     dt = 0.2
     varphi = [x["varphi in skt"] for x in messung["data"]]
-    del_varphi = 2
+    del_varphi = np.full(len(varphi), 2)
 
     lnvar = np.log(varphi)
     dlnvar = del_varphi / np.array(varphi)
 
     res = geradenfit(t, lnvar, dt, dlnvar)
-
+    
+    names = [r"$\varphi \: \left[ \text{Skt.} \right]$", r"$\Delta \varphi$", r"$\log{\varphi}$", r"$\Delta \log{\varphi}$"]
+    title = r"Werte 236.i"
+    values = [np.round(varphi, 3), np.round(del_varphi, 3), np.round(lnvar, 3), np.round(dlnvar, 3)]
+    filename = "Figures/236ij_table.pdf"
+    
+    plot_table(values, names, filename, title)
+    
     fig, ax = plt.subplots()
     ax.grid()
     ax.set_title("Diagramm 2: Ballistisches Galvanometer")
     ax.set_xlabel(r'$\Delta$ t in s')
     ax.set_ylabel(r'$\ln(\varphi)$')
-    ax.errorbar(t, lnvar, xerr=dt,yerr=dlnvar, fmt="o", label="val")
-    ax.plot(t, res["m"]* t + res["b"], label="fit")
-    ax.legend()
+    ax.errorbar(t, lnvar, xerr=dt,yerr=dlnvar, fmt="o", label="val", color='indigo', ecolor='indigo')
+    ax.plot(t, res["m"]* t + res["b"], label="fit", color='red')
+    plt.savefig("Figures/236ij.pdf", dpi=1200, format="pdf")
     plt.show()
     
     print("fit")
@@ -344,7 +395,6 @@ def task_236_ij(data):
     print("------")
 
     nvu = data["NVU_1"]
-    res["m"] -= 0.003 # dont mind me...
     
     C = next((x["Value"]*10**-6 for x in nvu if x["Name"] == "C"), None)
     R_3 = next((x["Value"] for x in nvu if x["Name"] == "R_3"), None)

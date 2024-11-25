@@ -118,7 +118,7 @@ def quadratischer_fit(x, y, x_err, y_err):
     # Fehlerabschätzungen
     sigmay = sigma(y_err, n)
     da = np.sqrt(sigmay / denom * (x2_strich * n - x_strich**2))
-    db = np.sqrt(sigmay / denom * (x4_strich * n - x3_strich**2))
+    db = np.sqrt(sigmay / denom * abs(x4_strich * n - x3_strich**2))
     dc = np.sqrt(sigmay / denom * (x4_strich * x2_strich - x3_strich**2))
 
     # Güte des Fits
@@ -190,31 +190,34 @@ def task_240(data):
     I = data["I_A1"]
     B = data["B_B1"]
 
-    print(B[30])
-    print("   ")
-    print(I[30])
-
+    B = B[I != 0]
+    I = I[I != 0]
+    
     N = 500*2
-    l = 0.477 # in mm
+    l = 0.477 
     dl = 4
 
-    d = 0.002 # in mm
+    d = 0.002
     dd = 0.05
 
     #H = N*I/l - d/(mu0 * l) * B
     #B* d/(mu0 *N) + H*l/(N) = I
     mu0 = 4*math.pi*10**-7
     
-    H = N*I/l - d/(mu0 * l) * B*10**-6
-    dH = np.sqrt((N/l*I_err(I))**2 + (B_err(B*10**-6) * d/(mu0*l))**2)
+    H = N*I/l - d/(mu0 * l) * B*10**-3
+    dH = np.sqrt((N/l*I_err(I))**2 + (B_err(B*10**-3) * d/(mu0*l))**2+ (dd*10**-3*B*10**-3/(mu0*l))**2 + (dl*10**-3*H/l)**2)
     
+    print("")
+    print(f"Durchschnittsungenauigkeit B: {np.mean(B_err(B))}")
+    print(f"Und für H: {np.mean(dH)}")
+    print("")
 
     fig, ax = plt.subplots()
 
     ax.grid()
     ax.set_xlabel(r"$H_{Fe}$[A/m]")
     ax.set_ylabel(r"B[mT]")
-    ax.plot(H,B,"--")
+    ax.errorbar(H,B,fmt="-")
     plt.show()
 
     fig, ax = plt.subplots()
@@ -224,12 +227,20 @@ def task_240(data):
     Hn = np.array(H[0:i])
     Bn = np.array(B[0:i])
 
-    mask = (Hn < 1000) & (Bn != 0)
+    mask = (Hn < 550) & (Bn != 0)
     Hn_an = Hn[mask]
     Bn_an = Bn[mask]
     
-    res = quadratischer_fit(Hn_an, Bn_an, dH[0:len(Hn_an)-1], B_err(Bn_an))
+    res = quadratischer_fit(Hn_an, Bn_an, dH[0:len(Hn_an)-1], B_err(Bn_an*10**-3))
 
+    print("Quadratischer Fit")
+    print(res["a"])
+    print(res["b"])
+    print(res["c"])
+    print(res["r_squared"])
+    print("")
+    
+    #res["b"] = (33 + res["b"])*mu0*10**3
     Hf = Hn[Hn != 0]
     Bf = Bn[Hn != 0]
 
@@ -237,15 +248,20 @@ def task_240(data):
     mu_max = np.max(mu_val)
     i_mu = np.argmax(mu_val)
 
+    dmu_max = math.sqrt((B_err(Bf[i_mu]*10**-3)/Hf[i_mu])**2 + (10**-3*dH[i_mu]*Bf[i_mu]/Hf[i_mu]**2)**2)*10**2
+
     print("")
-    print(f"Anfangspermeabilität mu_A: {res["b"]}")
-    print(f"Maximale Permeabilität mu_max: {mu_max}")
+    print(f"Anfangspermeabilität mu_A: {res["b"]}, mit der Unsicherheit: {res["db"]}")
+    print(f"Maximale Permeabilität mu_max: {mu_max}, mit der Unsicherheit: {dmu_max}")
     print(f"mit den Werten: B={Bf[i_mu]} mT und H={Hf[i_mu]} A/m")
+    print("")
+    print(f"Somit haben wir mu_A,r: {10**-3*res["b"]/mu0}, mit der Unsicherheit: {10**-3*res["db"]/mu0}")
+    print(f"Und max. mu_max,r: {mu_max/mu0*10**-3}, mit der Unsicherheit: {10**-3*dmu_max/mu0}")
     print("")
 
     ax.grid()
     ax.errorbar(Hn, Bn, fmt="-", label="Neukurve")
-    ax.plot(Hn_an, res["a"]*Hn_an**2 + Hn_an *res["b"] + res["c"], label="Quadratischer Fit Anfang")
+    ax.plot(Hn[Hn < 400], res["a"]*Hn[Hn < 400]**2 + Hn[Hn < 400]*res["b"] + res["c"], label="Quadratischer Fit Anfang")
     
     e = np.argmax(Hn[Hn < 10000])
     
@@ -253,12 +269,18 @@ def task_240(data):
     ax.plot([0, Hn[e]], [0, mu_max*Hn[e]], "--", label=r"$\mu_{\text{max}} \cdot H$")
     ax.set_xlabel(r"$H_{Fe}$[A/m]")
     ax.set_ylabel(r"B[mT]")
-    ax.set_xlim(-100,5000)
+    ax.set_xlim(-100,3000)
     ax.set_ylim(-100,1000)
     ax.legend()
     plt.show() 
 
 
 file_path="./data/240.txt"
+file = "./data/ystereseDavidLepac2.txt"
 data = load_cassy_file(file_path)
+data2 = load_cassy_file(file)
+print("-------Messreihe 1------------")
 task_240(data)
+
+
+

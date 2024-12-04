@@ -2,6 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 import re
+from matplotlib import colors as mcolors
+
+
+colors = dict(mcolors.BASE_COLORS, **mcolors.CSS4_COLORS)
+plt.ioff()
 
 def geradenfit(x, y, x_err, y_err):
     x = np.array(x)
@@ -188,10 +193,12 @@ I_err = lambda x : abs(0.01*x)
 
 def task_240(data):
     I = data["I_A1"]
-    B = data["B_B1"]
+    B = -data["B_B1"]
 
-    B = B[I != 0]
-    I = I[I != 0]
+    mask2 = ((np.abs(I) > 0.09) | (np.abs(B) < 30) & (I != 0))
+
+    # B = B[mask2]
+    # I = I[mask2]
     
     N = 500*2
     l = 0.477 
@@ -206,20 +213,14 @@ def task_240(data):
     
     H = N*I/l - d/(mu0 * l) * B*10**-3
     dH = np.sqrt((N/l*I_err(I))**2 + (B_err(B*10**-3) * d/(mu0*l))**2+ (dd*10**-3*B*10**-3/(mu0*l))**2 + (dl*10**-3*H/l)**2)
-    
-    print("")
-    print(f"Durchschnittsungenauigkeit B: {np.mean(B_err(B))}")
-    print(f"Und für H: {np.mean(dH)}")
-    print("")
 
     fig, ax = plt.subplots()
 
     ax.grid()
     ax.set_xlabel(r"$H_{Fe}$[A/m]")
     ax.set_ylabel(r"B[mT]")
-    ax.errorbar(H,B,fmt="-")
+    ax.errorbar(H,B, xerr=dH, yerr=np.abs(B * 0.01), color='blue', ecolor='red', capsize=0.5)
     plt.show()
-
     fig, ax = plt.subplots()
 
     i = np.argmax(B)
@@ -227,18 +228,11 @@ def task_240(data):
     Hn = np.array(H[0:i])
     Bn = np.array(B[0:i])
 
-    mask = (Hn < 550) & (Bn != 0)
+    mask = (Hn < 90) & (Bn != 0)
     Hn_an = Hn[mask]
     Bn_an = Bn[mask]
     
     res = quadratischer_fit(Hn_an, Bn_an, dH[0:len(Hn_an)-1], B_err(Bn_an*10**-3))
-
-    print("Quadratischer Fit")
-    print(res["a"])
-    print(res["b"])
-    print(res["c"])
-    print(res["r_squared"])
-    print("")
     
     #res["b"] = (33 + res["b"])*mu0*10**3
     Hf = Hn[Hn != 0]
@@ -247,26 +241,35 @@ def task_240(data):
     mu_val = Bf / Hf
     mu_max = np.max(mu_val)
     i_mu = np.argmax(mu_val)
+    
+    supermask = Hn > 1720
+    B_val = Bn[supermask][0]
+    H_val = Hn[supermask][0]
+    mu_max = B_val / H_val
+    
+    dmu_max = math.sqrt(((0.03 * B_val*10**-3)/(H_val * 10**(-3)))**2 + (H_val*0.01*B_val/H_val**2)**2)
 
-    dmu_max = math.sqrt((B_err(Bf[i_mu]*10**-3)/Hf[i_mu])**2 + (10**-3*dH[i_mu]*Bf[i_mu]/Hf[i_mu]**2)**2)*10**2
+    print("")
+    print(f"Anfangspermeabilität mu_A: ", -res["b"], ", mit der Unsicherheit: ", -res["b"])
+    print(f"Maximale Permeabilität mu_max: ", mu_max, " mit der Unsicherheit: ", dmu_max)
+    print(f"mit den Werten: B= ", -Bf[i_mu], "mT und H= ", -Hf[i_mu]," A/m")
+    print("")
+    print(f"Somit haben wir mu_A,r: ", -10**-3*res["b"]/mu0, ", mit der Unsicherheit: ", 10**-3*res["db"]/mu0)
+    print(f"Und max. mu_max,r: ", (10**-3*mu_max)/mu0," mit der Unsicherheit: ", (10**-3*dmu_max)/mu0)
+    print("")
 
-    print("")
-    print(f"Anfangspermeabilität mu_A: {res["b"]}, mit der Unsicherheit: {res["db"]}")
-    print(f"Maximale Permeabilität mu_max: {mu_max}, mit der Unsicherheit: {dmu_max}")
-    print(f"mit den Werten: B={Bf[i_mu]} mT und H={Hf[i_mu]} A/m")
-    print("")
-    print(f"Somit haben wir mu_A,r: {10**-3*res["b"]/mu0}, mit der Unsicherheit: {10**-3*res["db"]/mu0}")
-    print(f"Und max. mu_max,r: {mu_max/mu0*10**-3}, mit der Unsicherheit: {10**-3*dmu_max/mu0}")
-    print("")
 
     ax.grid()
-    ax.errorbar(Hn, Bn, fmt="-", label="Neukurve")
-    ax.plot(Hn[Hn < 400], res["a"]*Hn[Hn < 400]**2 + Hn[Hn < 400]*res["b"] + res["c"], label="Quadratischer Fit Anfang")
+    ax.errorbar(Hn, Bn, label="Neukurve")
+    # ax.plot(Hn[Hn < 400], -res["a"]*Hn[Hn < 400]**2 + Hn[Hn < 400]*res["b"] + res["c"], label="Quadratischer Fit Anfang")
     
     e = np.argmax(Hn[Hn < 10000])
     
-    ax.plot([0, Hn[e]], [0, res["b"]* Hn[e]], "--",label=r"$\mu_{A} \cdot H$")
+    val = np.linspace([0, 3000], 3000)
+
+    ax.plot([0, Hn[e]], [0, -res["b"]* Hn[e]], "--",label=r"$\mu_{A} \cdot H$")
     ax.plot([0, Hn[e]], [0, mu_max*Hn[e]], "--", label=r"$\mu_{\text{max}} \cdot H$")
+    ax.plot()
     ax.set_xlabel(r"$H_{Fe}$[A/m]")
     ax.set_ylabel(r"B[mT]")
     ax.set_xlim(-100,3000)
@@ -275,12 +278,23 @@ def task_240(data):
     plt.show() 
 
 
-file_path="./data/240.txt"
-file = "./data/ystereseDavidLepac2.txt"
+# file_path="./data/240_1.txt"
+# data = load_cassy_file(file_path)
+
+# print("-------Messreihe 1------------")
+# task_240(data)
+
+file_path="./data/240_2_deez.txt"
 data = load_cassy_file(file_path)
-data2 = load_cassy_file(file)
+
 print("-------Messreihe 1------------")
 task_240(data)
+
+# file_path="./data/240_3.txt"
+# data = load_cassy_file(file_path)
+
+# print("-------Messreihe 1------------")
+# task_240(data)
 
 
 

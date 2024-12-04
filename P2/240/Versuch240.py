@@ -8,6 +8,10 @@ from matplotlib import colors as mcolors
 colors = dict(mcolors.BASE_COLORS, **mcolors.CSS4_COLORS)
 plt.ioff()
 
+
+plt.rcParams['mathtext.fontset'] = 'stix'
+plt.rcParams['font.family'] = 'STIXGeneral'
+
 def geradenfit(x, y, x_err, y_err):
     x = np.array(x)
     y = np.array(y)
@@ -217,9 +221,12 @@ def task_240(data):
     fig, ax = plt.subplots()
 
     ax.grid()
-    ax.set_xlabel(r"$H_{Fe}$[A/m]")
-    ax.set_ylabel(r"B[mT]")
+    ax.set_xlabel(r"$H_{Fe} \: \left[ \frac{A}{m} \right]$")
+    ax.set_ylabel(r"$B \: \left[ \text{mT} \right]$")
     ax.errorbar(H,B, xerr=dH, yerr=np.abs(B * 0.01), color='blue', ecolor='red', capsize=0.5)
+    plt.title(r"$Hysteresekurve$", fontsize=15)
+    plt.tight_layout()
+    plt.savefig("Figures/Hysterese.pdf", format="pdf", dpi=1200)
     plt.show()
     fig, ax = plt.subplots()
 
@@ -250,9 +257,9 @@ def task_240(data):
     dmu_max = math.sqrt(((0.03 * B_val*10**-3)/(H_val * 10**(-3)))**2 + (H_val*0.01*B_val/H_val**2)**2)
 
     print("")
-    print(f"Anfangspermeabilität mu_A: ", -res["b"], ", mit der Unsicherheit: ", -res["b"])
+    print(f"Anfangspermeabilität mu_A: ", -res["b"], ", mit der Unsicherheit: ", res["db"])
     print(f"Maximale Permeabilität mu_max: ", mu_max, " mit der Unsicherheit: ", dmu_max)
-    print(f"mit den Werten: B= ", -Bf[i_mu], "mT und H= ", -Hf[i_mu]," A/m")
+    print(f"mit den Werten: B= ", -B_val, "mT und H= ", H_val," A/m")
     print("")
     print(f"Somit haben wir mu_A,r: ", -10**-3*res["b"]/mu0, ", mit der Unsicherheit: ", 10**-3*res["db"]/mu0)
     print(f"Und max. mu_max,r: ", (10**-3*mu_max)/mu0," mit der Unsicherheit: ", (10**-3*dmu_max)/mu0)
@@ -260,21 +267,24 @@ def task_240(data):
 
 
     ax.grid()
-    ax.errorbar(Hn, Bn, label="Neukurve")
+    ax.errorbar(Hn, Bn, label="Neukurve", color='blue')
     # ax.plot(Hn[Hn < 400], -res["a"]*Hn[Hn < 400]**2 + Hn[Hn < 400]*res["b"] + res["c"], label="Quadratischer Fit Anfang")
     
     e = np.argmax(Hn[Hn < 10000])
     
     val = np.linspace([0, 3000], 3000)
 
-    ax.plot([0, Hn[e]], [0, -res["b"]* Hn[e]], "--",label=r"$\mu_{A} \cdot H$")
-    ax.plot([0, Hn[e]], [0, mu_max*Hn[e]], "--", label=r"$\mu_{\text{max}} \cdot H$")
+    ax.plot([0, Hn[e]], [0, -res["b"]* Hn[e]], "--",label=r"$\mu_{A} \cdot H$", color="hotpink")
+    ax.plot([0, Hn[e]], [0, mu_max*Hn[e]], "--", label=r"$\mu_{\text{max}} \cdot H$", color="indigo")
     ax.plot()
-    ax.set_xlabel(r"$H_{Fe}$[A/m]")
-    ax.set_ylabel(r"B[mT]")
+    ax.set_xlabel(r"$H_{Fe} \: \left[ \frac{A}{m} \right]$")
+    ax.set_ylabel(r"$B \: \left[ \text{mT} \right]$")
     ax.set_xlim(-100,3000)
     ax.set_ylim(-100,1000)
     ax.legend()
+    plt.title(r"Ausschnitt Hysteresekurve mit Permeabilitäten", fontsize=15)
+    plt.tight_layout()
+    plt.savefig("Figures/Perm.pdf", format="pdf", dpi=1200)
     plt.show() 
 
 

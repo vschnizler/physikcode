@@ -275,7 +275,7 @@ def task_240(data):
     val = np.linspace([0, 3000], 3000)
 
     ax.plot([0, Hn[e]], [0, -res["b"]* Hn[e]], "--",label=r"$\mu_{A} \cdot H$", color="hotpink")
-    ax.plot([0, Hn[e]], [0, mu_max*Hn[e]], "--", label=r"$\mu_{\text{max}} \cdot H$", color="indigo")
+    ax.plot([0, Hn[e]], [0, mu_max*Hn[e]], "--", label=r"$\mu_{\text{max}} \cdot H$", color="red")
     ax.plot()
     ax.set_xlabel(r"$H_{Fe} \: \left[ \frac{A}{m} \right]$")
     ax.set_ylabel(r"$B \: \left[ \text{mT} \right]$")

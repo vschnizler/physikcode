@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import math
-from sklearn.cluster import KMeans
 import plotly.graph_objects as go
 import pandas as pd
 
@@ -169,15 +168,16 @@ def load_data(filepath):
 def task_242_a(data):
     nvu = data["NVU_1"]
 
-    d_end = next(((x["Value"]) for x in nvu if x["Name"] == "d_end"), None)
+    r1 = next(((x["Value"]) for x in nvu if x["Name"] == "d_anf"), None)
     delI = next((x["Value"] for x in nvu if x["Name"] == "del I"), None)
     delD = next((x["Value"]+0.2 for x in nvu if x["Name"] == "del d"), None)
 
     messung = data["Messung_1"]["data"]
-    U = [x["U in V"] for x in messung]
-    d = [x["d in cm"] for x in messung]
-    I1 = [x["I1 in A"] for x in messung]
-    I2 = [x["I2 in A"] for x in messung]
+    U = np.array([x["U in V"] for x in messung])
+    d = np.array([x["d in cm"] for x in messung])
+    d = d - r1
+    I1 = np.array([x["I1 in A"] for x in messung])
+    I2 = np.array([x["I2 in A"] for x in messung])
 
     I = 1/2*(np.array(I1) + np.array(I2))
     dI = 1/2*np.sqrt(2*(delI)**2)
@@ -187,7 +187,7 @@ def task_242_a(data):
     BE = 0.716*2*math.pi*10**(-7)*130*(np.array(I2) - np.array(I1))/0.15
     dBE = 0.716*2*math.pi*10**(-7)*130*np.sqrt(2*delI**2)/0.15
 
-    r = (d_end - np.array(d))/2
+    r =  np.array(d)/2
     rerr = np.sqrt(2*(delD/2)**2)
 
     fig, ax = plt.subplots()
@@ -195,17 +195,16 @@ def task_242_a(data):
     y = (np.array(r) * np.array(I))**2
     y_err = np.sqrt((2*rerr*r*np.array(I)**2)**2 + (2*np.array(I)*r**2*delI)**2)
     
-    print(r)
     
-    #table_plot("", "B_S in mT", np.round(np.array(BS)*10**3, 2), "del B_S in mT", np.round(np.array(dBS)*10**3, 4), "B_E in mikro T", np.round(np.array(BE)*10**6, 2), "del B_E in mikro T", np.round(np.array(dBE)*10**6, 2))
+    table_plot("", "B_S in mT", np.round(np.array(BS)*10**3, 2), "del B_S in mT", np.round(np.array(dBS)*10**3, 4), "B_E in mikro T", np.round(np.array(BE)*10**6, 2), "del B_E in mikro T", np.round(np.array(dBE)*10**6, 2))
     res = geradenfit(U, y, 2, y_err)
 
     print("Gerade")
-    print(res["m"])
-    print(res["dm"])
-    print(res["b"])
-    print(res["db"])
-    print(res["r_squared"])
+    print("m= ",res["m"])
+    print("dm= ",res["dm"])
+    print("b= ",res["b"])
+    print("db= ",res["db"])
+    #print(res["r_squared"])
    
     ax.grid()
     ax.errorbar(U, y, yerr=y_err, xerr=2, fmt=" ", label="Values")
@@ -213,24 +212,18 @@ def task_242_a(data):
     ax.set_xlabel("U[V]")
     ax.set_ylabel("(rI)²[cm²A²]")
     ax.legend()
-        
-    print(" ")
-    print(len(BE))
-    print(np.mean(BE))
-    print(np.mean(dBE))
-    print(1-20*10**(-6)/np.mean(BE))
-    print(abs(20*10**(-6) - np.mean(BE))/np.mean(dBE)*2)
-    print("B-Feld")
+    plt.show()
 
-    em = (2*5**3*(0.15)**2)/(4**3*(4*math.pi*10**(-7)*130)**2*res["m"])
-    dem = (2*5**3*(0.15)**2)/(4**3*(4*math.pi*10**(-7)*130)**2*res["m"]**2)*res["dm"]
+    print("Erdfeld= ", np.mean(BE)*10**3, "+/-", np.mean(dBE)*10**3)
+
+    em = (2*5**3*(0.15)**2)/(4**3*(4*math.pi*10**(-9)*130)**2*res["m"])
+    dem = (2*5**3*(0.15)**2)/(4**3*(4*math.pi*10**(-9)*130)**2*res["m"]**2)*res["dm"]
     
-    print(em*10**-6)
-    print(1 - (em*10**(-6))/17.59)
-    print(dem*10**(-6))
+    print("em= ", em*10**(-11))
+    print("dem= ", dem*10**(-11))
 
     #plt.show()
-    return em 
+    return 0
 
 
 file_path = "data/data.txt"
@@ -432,8 +425,8 @@ def task_242_g(data):
 
     n_cluster = 3
     ne_reshaped = ne.reshape(-1, 1)
-    kmeans = KMeans(n_clusters=n_cluster, random_state=0).fit(ne_reshaped)
-    labels = kmeans.labels_
+    kmeans #= KMeans(n_clusters=n_cluster, random_state=0).fit(ne_reshaped)
+    labels #= kmeans.labels_
 
     grouped_ne = [ne[labels == i] for i in range(n_cluster)]
     grouped_dne = [dne[labels == i] for i in range(n_cluster)]
@@ -550,3 +543,4 @@ def task_242_i(r, dr1, e_S, de):
 
 task_242_c(data["c"], [data["d1"], data["d2"], data["d3"]])
 
+"""

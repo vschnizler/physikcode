@@ -3,6 +3,7 @@ import numpy as np
 import math
 import plotly.graph_objects as go
 import pandas as pd
+from sklearn.cluster import KMeans
 
 
 def geradenfit(x, y, x_err, y_err):
@@ -228,8 +229,7 @@ def task_242_a(data):
 
 file_path = "data/data.txt"
 data = load_data(file_path)
-em = task_242_a(data["a"])
-
+# em = task_242_a(data["a"])
 
 
 def task_242_c(nvu, data):
@@ -425,8 +425,8 @@ def task_242_g(data):
 
     n_cluster = 3
     ne_reshaped = ne.reshape(-1, 1)
-    kmeans #= KMeans(n_clusters=n_cluster, random_state=0).fit(ne_reshaped)
-    labels #= kmeans.labels_
+    kmeans = KMeans(n_clusters=n_cluster, random_state=0).fit(ne_reshaped)
+    labels = kmeans.labels_
 
     grouped_ne = [ne[labels == i] for i in range(n_cluster)]
     grouped_dne = [dne[labels == i] for i in range(n_cluster)]
@@ -543,4 +543,3 @@ def task_242_i(r, dr1, e_S, de):
 
 task_242_c(data["c"], [data["d1"], data["d2"], data["d3"]])
 
-"""
